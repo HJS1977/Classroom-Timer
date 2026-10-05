@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Mrs. Sullivan's Classroom Timer</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; font-family: Arial, Helvetica, sans-serif;
+    background: linear-gradient(135deg,#fff7d6,#dff7ff);
+    color:#1f2937; display:flex; justify-content:center; align-items:center;
+    padding:22px; touch-action: manipulation;
+  }
+  .app { width:min(1200px,100%); text-align:center; }
+  h1 { font-size:clamp(30px,4vw,54px); margin:0 0 12px; }
+  .subtitle { font-size:clamp(17px,2vw,25px); margin-bottom:18px; }
+  #display {
+    font-size:clamp(90px,18vw,220px); font-weight:800; line-height:1;
+    background:white; border-radius:30px; padding:22px; margin:0 auto 24px;
+    box-shadow:0 8px 25px rgba(0,0,0,.12); font-variant-numeric:tabular-nums;
+  }
+  .presets {
+    display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:22px;
+  }
+  button {
+    border:0; border-radius:22px; padding:22px 10px; font-size:clamp(24px,3vw,38px);
+    font-weight:800; cursor:pointer; box-shadow:0 6px 0 rgba(0,0,0,.15);
+    min-height:90px; color:#18202b;
+  }
+  button:active { transform:translateY(4px); box-shadow:0 2px 0 rgba(0,0,0,.15); }
+  .p1{background:#ffd166}.p2{background:#8be9fd}.p3{background:#ff9fbd}
+  .p4{background:#a7f3a1}.p5{background:#cdb4ff}.p6{background:#ffb86c}
+  .p7{background:#90dbf4}.p8{background:#f1c0e8}.p9{background:#b9fbc0}
+  .controls { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+  .pause{background:#ffe66d}.reset{background:#e5e7eb}.sound{background:#bde0fe}
+  .hint { margin-top:18px; font-size:18px; }
+  .finished { animation:flash .55s alternate 8; }
+  @keyframes flash { from{background:#fff} to{background:#ff6b6b;color:white} }
+  @media(max-width:700px){
+    .presets{grid-template-columns:repeat(2,1fr)}
+    .controls{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<main class="app">
+  <h1>⏰ Mrs. Sullivan's Classroom Timer</h1>
+  <div class="subtitle">Tap a time to start immediately.</div>
+  <div id="display">1:30</div>
+
+  <section class="presets">
+    <button class="p1" onclick="startPreset(30)">30 sec</button>
+    <button class="p2" onclick="startPreset(60)">1 min</button>
+    <button class="p3" onclick="startPreset(90)">1:30</button>
+    <button class="p4" onclick="startPreset(120)">2 min</button>
+    <button class="p5" onclick="startPreset(180)">3 min</button>
+    <button class="p6" onclick="startPreset(300)">5 min</button>
+    <button class="p7" onclick="startPreset(600)">10 min</button>
+    <button class="p8" onclick="startPreset(900)">15 min</button>
+    <button class="p9" onclick="startPreset(1200)">20 min</button>
+  </section>
+
+  <section class="controls">
+    <button class="pause" id="pauseBtn" onclick="togglePause()">⏸ Pause</button>
+    <button class="reset" onclick="resetTimer()">↺ Reset</button>
+    <button class="sound" onclick="testSound()">🔊 Test Sound</button>
+  </section>
+  <div class="hint">Tip: tap “Test Sound” once after opening the page so the board allows audio.</div>
+</main>
+
+<script>
+let remaining=90, initial=90, timer=null, running=false;
+const display=document.getElementById('display');
+const pauseBtn=document.getElementById('pauseBtn');
+
+function draw(){
+  const m=Math.floor(remaining/60), s=remaining%60;
+  display.textContent = m + ':' + String(s).padStart(2,'0');
+}
+function startPreset(sec){
+  clearInterval(timer); initial=sec; remaining=sec; running=true;
+  display.classList.remove('finished'); pauseBtn.textContent='⏸ Pause';
+  draw(); timer=setInterval(tick,1000);
+}
+function tick(){
+  if(!running) return;
+  remaining--;
+  if(remaining<=0){
+    remaining=0; draw(); clearInterval(timer); running=false;
+    display.classList.add('finished'); alarm();
+    pauseBtn.textContent='▶ Start';
+    return;
+  }
+  draw();
+}
+function togglePause(){
+  if(remaining===0){ remaining=initial; draw(); }
+  running=!running;
+  pauseBtn.textContent=running?'⏸ Pause':'▶ Resume';
+  if(running && !timer) timer=setInterval(tick,1000);
+}
+function resetTimer(){
+  clearInterval(timer); timer=null; running=false; remaining=initial;
+  display.classList.remove('finished'); pauseBtn.textContent='▶ Start'; draw();
+}
+function beep(ctx, when, freq, duration, gain=0.45){
+  const o=ctx.createOscillator(), g=ctx.createGain();
+  o.type='square'; o.frequency.value=freq; g.gain.value=gain;
+  o.connect(g); g.connect(ctx.destination); o.start(when); o.stop(when+duration);
+}
+function alarm(){
+  const AC=window.AudioContext||window.webkitAudioContext;
+  const ctx=new AC(); let t=ctx.currentTime;
+  for(let r=0;r<3;r++){
+    beep(ctx,t+r*.75,880,.22); beep(ctx,t+r*.75+.27,880,.22);
+  }
+}
+function testSound(){ alarm(); }
+draw();
+</script>
+</body>
+</html>
